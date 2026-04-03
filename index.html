@@ -2,18 +2,92 @@
 <html lang="ru">
 <head>
   <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <title>Очередь школ</title>
+
   <style>
-    body { font-family: Arial; padding: 20px; }
-    pre { background: #f4f4f4; padding: 10px; }
+    :root {
+      --bg: #f2f2f7;
+      --card: #ffffff;
+      --text: #000;
+      --subtext: #666;
+      --good: #34c759;
+      --mid: #ff9500;
+      --bad: #ff3b30;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #000;
+        --card: #1c1c1e;
+        --text: #fff;
+        --subtext: #aaa;
+      }
+    }
+
+    body {
+      margin: 0;
+      padding: env(safe-area-inset-top) 16px env(safe-area-inset-bottom);
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, Arial;
+    }
+
+    h2 {
+      font-size: 22px;
+      margin: 10px 0;
+    }
+
+    button {
+      width: 100%;
+      padding: 14px;
+      font-size: 18px;
+      border-radius: 12px;
+      border: none;
+      background: #007aff;
+      color: white;
+      margin-bottom: 12px;
+    }
+
+    .card {
+      background: var(--card);
+      border-radius: 14px;
+      padding: 12px;
+      margin-bottom: 10px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+    }
+
+    .row {
+      display: flex;
+      justify-content: space-between;
+      font-size: 16px;
+      margin: 4px 0;
+    }
+
+    .name {
+      font-weight: 600;
+      font-size: 18px;
+    }
+
+    .pos.good { color: var(--good); font-weight: bold; }
+    .pos.mid { color: var(--mid); }
+    .pos.bad { color: var(--bad); font-weight: bold; }
+
+    .small {
+      font-size: 13px;
+      color: var(--subtext);
+    }
   </style>
 </head>
+
 <body>
 
-<h2>Очередь школ</h2>
+<h2>📊 Очередь школ</h2>
 <button onclick="loadData()">Обновить</button>
 
-<pre id="output">Нажми "Обновить"</pre>
+<div id="updated" class="small"></div>
+
+<div id="list"></div>
 
 <script>
 const TARGET = "177Г65Б2927А3ГЕААВ9В3";
@@ -25,44 +99,98 @@ const schools = [
   { name: "Г.177", id: "75f81bdf-5401-4386-e924-dcbb8a7b4da4", capacity: 120 }
 ];
 
-async function loadData() {
-  let result = "";
-  const now = new Date().toLocaleString();
+function calculateGroups(numbers) {
+  let indices = [0];
 
-  result += `Обновлено: ${now}\n\n`;
-  result += `Школа | Поз. | Всего | Мест\n\n`;
+  for (let i = 1; i < numbers.length; i++) {
+    if (numbers[i] < numbers[i - 1]) {
+      indices.push(i);
+    }
+  }
+
+  indices.push(numbers.length);
+
+  let sizes = [];
+
+  for (let i = 0; i < indices.length - 1; i++) {
+    sizes.push(indices[i + 1] - indices[i]);
+  }
+
+  return sizes;
+}
+
+async function loadData() {
+  const list = document.getElementById("list");
+  list.innerHTML = "";
+
+  document.getElementById("updated").textContent =
+    "Обновлено: " + new Date().toLocaleString();
 
   for (const school of schools) {
     try {
       const res = await fetch(
-        `https://edu-inform.ekadm.ru/api/queue?schoolId=${school.id}`,
-        {
-          headers: {
-            "Accept": "application/json",
-            "User-Agent": "Mozilla/5.0"
-          }
-        }
+        `https://edu-inform.ekadm.ru/api/queue?schoolId=${school.id}`
       );
 
       const data = await res.json();
 
       const total = data.count;
+      const numbers = data.items.map(i => i.declarationNumber);
 
-      const index = data.items.findIndex(
-        item => item.declarationNumber === TARGET
-      );
-
+      const index = numbers.findIndex(n => n === TARGET);
       const position = index !== -1 ? index + 1 : "-";
 
-      result += `${school.name} | ${position} | ${total} | ${school.capacity}\n`;
+      const groups = calculateGroups(numbers);
+
+      let g = [0, 0, 0, 0];
+      groups.forEach((v, i) => g[i] = v);
+
+      let posClass = "mid";
+      if (position !== "-") {
+        posClass = position < school.capacity ? "good" : "bad";
+      }
+
+      const card = document.createElement("div");
+      card.className = "card";
+
+      card.innerHTML = `
+        <div class="name">${school.name}</div>
+
+        <div class="row">
+          <span>Позиция</span>
+          <span class="pos ${posClass}">${position}</span>
+        </div>
+
+        <div class="row">
+          <span>Всего</span>
+          <span>${total}</span>
+        </div>
+
+        <div class="row">
+          <span>Мест</span>
+          <span>${school.capacity}</span>
+        </div>
+
+        <div class="row small">
+          <span>Распределение</span>
+          <span>${g.join("/")}</span>
+        </div>
+      `;
+
+      list.appendChild(card);
 
     } catch (e) {
-      result += `${school.name} | ошибка\n`;
+      const error = document.createElement("div");
+      error.className = "card";
+      error.textContent = school.name + " — ошибка";
+      list.appendChild(error);
     }
   }
-
-  document.getElementById("output").textContent = result;
 }
+
+// автообновление каждые 60 сек
+loadData();
+setInterval(loadData, 60000);
 </script>
 
 </body>
