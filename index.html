@@ -140,7 +140,9 @@
 
   <div id="list"></div>
 
-  <button onclick="loadData()" style="margin-top:12px">Обновить</button>
+  <div id="btn-row" style="margin-top:12px">
+    <button onclick="loadData()">Обновить</button>
+  </div>
 </div>
 
 <script>
@@ -158,7 +160,7 @@ input.addEventListener("input", () => {
   const params = new URLSearchParams(location.search);
   if (val) params.set("target", val); else params.delete("target");
   history.replaceState(null, "", params.size ? "?" + params : location.pathname);
-  document.querySelector("button").textContent = "Обновить с новым номером заявления";
+  document.querySelector("#btn-row button").textContent = "Найти по номеру заявления";
 });
 
 function getTarget() { return input.value.trim(); }
@@ -193,7 +195,7 @@ function calculateGroups(numbers) {
 
 async function loadData() {
   const list = document.getElementById("list");
-  const btn = document.querySelector("button");
+  const btn = document.getElementById("btn-row");
   list.innerHTML = "";
   btn.hidden = true;
 
@@ -271,12 +273,9 @@ async function loadData() {
   }
 
   btn.hidden = false;
-  btn.textContent = "Обновить";
 }
 
-// автообновление каждые 60 сек
 loadData();
-setInterval(loadData, 60000);
 </script>
 
 </body>
