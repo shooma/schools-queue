@@ -121,7 +121,8 @@ const schools = [
   { name: "Школа 200", id: "eee15c16-86e5-4a33-c772-cebb831d56c2", capacity: 120 },
   { name: "Полифорум 180", id: "67572ad9-2adc-4ae8-9661-8c21e51d9ba8", capacity: 180 },
   { name: "Школа 32", id: "9eda7bea-abd2-4c45-e2b1-4378e24e5fbe", capacity: 120 },
-  { name: "Гимназия 177", id: "75f81bdf-5401-4386-e924-dcbb8a7b4da4", capacity: 120 }
+  { name: "Гимназия 177", id: "75f81bdf-5401-4386-e924-dcbb8a7b4da4", capacity: 120 },
+  { name: "Школа 197", id: "0a498919-0fcf-45f2-af29-6da3ebab140b", capacity: 60 }
 ];
 
 function calculateGroups(numbers) {
@@ -170,6 +171,15 @@ async function loadData() {
       let g = [0, 0, 0, 0];
       groups.forEach((v, i) => g[4 - groups.length + i] = v);
 
+      let targetGroup = -1;
+      if (index !== -1) {
+        let cum = 0;
+        for (let i = 0; i < groups.length; i++) {
+          cum += groups[i];
+          if (index < cum) { targetGroup = 4 - groups.length + i; break; }
+        }
+      }
+
       let posClass = "mid";
       if (position !== "-") {
         posClass = position < school.capacity ? "good" : "bad";
@@ -198,7 +208,7 @@ async function loadData() {
 
         <div class="row small">
           <span title="Внеоч. / Первооч. / Братья и сестры / Без льгот" style="cursor:help;border-bottom:1px dashed var(--subtext)">Распределение</span>
-          <span>${g.join("/")}</span>
+          <span>${g.map((v, i) => i === targetGroup ? `<b class="pos ${posClass}">${v}</b>` : v).join("/")}</span>
         </div>
       `;
 
