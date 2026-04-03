@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <title>Очередь школ</title>
+  <style>
+    body { font-family: Arial; padding: 20px; }
+    pre { background: #f4f4f4; padding: 10px; }
+  </style>
+</head>
+<body>
+
+<h2>Очередь школ</h2>
+<button onclick="loadData()">Обновить</button>
+
+<pre id="output">Нажми "Обновить"</pre>
+
+<script>
+const TARGET = "177Г65Б2927А3ГЕААВ9В3";
+
+const schools = [
+  { name: "Ш.200", id: "eee15c16-86e5-4a33-c772-cebb831d56c2", capacity: 120 },
+  { name: "П.180", id: "67572ad9-2adc-4ae8-9661-8c21e51d9ba8", capacity: 180 },
+  { name: "Ш.32", id: "9eda7bea-abd2-4c45-e2b1-4378e24e5fbe", capacity: 120 },
+  { name: "Г.177", id: "75f81bdf-5401-4386-e924-dcbb8a7b4da4", capacity: 120 }
+];
+
+async function loadData() {
+  let result = "";
+  const now = new Date().toLocaleString();
+
+  result += `Обновлено: ${now}\n\n`;
+  result += `Школа | Поз. | Всего | Мест\n\n`;
+
+  for (const school of schools) {
+    try {
+      const res = await fetch(
+        `https://edu-inform.ekadm.ru/api/queue?schoolId=${school.id}`,
+        {
+          headers: {
+            "Accept": "application/json",
+            "User-Agent": "Mozilla/5.0"
+          }
+        }
+      );
+
+      const data = await res.json();
+
+      const total = data.count;
+
+      const index = data.items.findIndex(
+        item => item.declarationNumber === TARGET
+      );
+
+      const position = index !== -1 ? index + 1 : "-";
+
+      result += `${school.name} | ${position} | ${total} | ${school.capacity}\n`;
+
+    } catch (e) {
+      result += `${school.name} | ошибка\n`;
+    }
+  }
+
+  document.getElementById("output").textContent = result;
+}
+</script>
+
+</body>
+</html>
