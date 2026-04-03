@@ -107,11 +107,12 @@
 
 <div class="container">
   <h2>📊 Очередь школ</h2>
-  <button onclick="loadData()">Обновить</button>
 
   <div id="updated" class="small"></div>
 
   <div id="list"></div>
+
+  <button onclick="loadData()" style="margin-top:12px">Обновить</button>
 </div>
 
 <script>
@@ -147,7 +148,9 @@ function calculateGroups(numbers) {
 
 async function loadData() {
   const list = document.getElementById("list");
+  const btn = document.querySelector("button");
   list.innerHTML = "";
+  btn.hidden = true;
 
   document.getElementById("updated").textContent =
     "Обновлено: " + new Date().toLocaleString();
@@ -221,6 +224,8 @@ async function loadData() {
       list.appendChild(error);
     }
   }
+
+  btn.hidden = false;
 }
 
 // автообновление каждые 60 сек
