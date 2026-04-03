@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <title>Очередь школ</title>
+  <title>Очередь в первый класс, ботаника</title>
 
   <style>
     :root {
@@ -129,7 +129,7 @@
 <body>
 
 <div class="container">
-  <h2>📊 Очередь школ</h2>
+  <h2>Очередь в первый класс, ботаника</h2>
 
   <div class="input-row">
     <label for="target-input" class="small">Номер заявления</label>
@@ -153,7 +153,11 @@ if (urlTarget) {
   input.value = localStorage.getItem("target") || "";
 }
 input.addEventListener("input", () => {
-  localStorage.setItem("target", input.value.trim());
+  const val = input.value.trim();
+  localStorage.setItem("target", val);
+  const params = new URLSearchParams(location.search);
+  if (val) params.set("target", val); else params.delete("target");
+  history.replaceState(null, "", params.size ? "?" + params : location.pathname);
   document.querySelector("button").textContent = "Обновить с новым номером заявления";
 });
 
