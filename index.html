@@ -100,6 +100,29 @@
       font-size: 13px;
       color: var(--subtext);
     }
+
+    .input-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+
+    .input-row input {
+      flex: 1;
+      max-width: 280px;
+      padding: 8px 12px;
+      font-size: 15px;
+      border-radius: 10px;
+      border: 1px solid #ccc;
+      background: var(--card);
+      color: var(--text);
+      outline: none;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      .input-row input { border-color: #444; }
+    }
   </style>
 </head>
 
@@ -107,6 +130,11 @@
 
 <div class="container">
   <h2>📊 Очередь школ</h2>
+
+  <div class="input-row">
+    <label for="target-input" class="small">Номер заявления</label>
+    <input id="target-input" type="text" placeholder="177Г65Б..." spellcheck="false" autocomplete="off" />
+  </div>
 
   <div id="updated" class="small"></div>
 
@@ -116,7 +144,20 @@
 </div>
 
 <script>
-const TARGET = "177Г65Б2927А3ГЕААВ9В3";
+const input = document.getElementById("target-input");
+const urlTarget = new URLSearchParams(location.search).get("target");
+if (urlTarget) {
+  input.value = urlTarget.trim();
+  localStorage.setItem("target", input.value);
+} else {
+  input.value = localStorage.getItem("target") || "";
+}
+input.addEventListener("input", () => {
+  localStorage.setItem("target", input.value.trim());
+  document.querySelector("button").textContent = "Обновить с новым номером заявления";
+});
+
+function getTarget() { return input.value.trim(); }
 
 const schools = [
   { name: "Школа 200", id: "eee15c16-86e5-4a33-c772-cebb831d56c2", capacity: 120 },
@@ -166,7 +207,7 @@ async function loadData() {
       const total = data.count;
       const numbers = data.items.map(i => i.declarationNumber);
 
-      const index = numbers.findIndex(n => n === TARGET);
+      const index = numbers.findIndex(n => n === getTarget());
       const position = index !== -1 ? index + 1 : "-";
 
       const groups = calculateGroups(numbers);
@@ -226,6 +267,7 @@ async function loadData() {
   }
 
   btn.hidden = false;
+  btn.textContent = "Обновить";
 }
 
 // автообновление каждые 60 сек
