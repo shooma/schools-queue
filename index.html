@@ -112,9 +112,6 @@
     .card-name-row { display:flex; align-items:baseline; justify-content:space-between; }
     .card-rows { display:block; margin-top:4px; }
 
-    @media (min-width: 600px) {
-      .pos-mobile { display:none; }
-    }
 
     .input-row {
       display: flex;
@@ -292,7 +289,6 @@ function cardHTML(school, data) {
         <div class="card-text">
           <div class="card-name-row">
             <span class="name">${school.name}</span>
-            ${position !== "-" ? `<span class="pos ${posClass} pos-mobile">${position}</span>` : ""}
           </div>
         </div>
         ${makePie(g, school.capacity, targetGroup, total)}
