@@ -107,6 +107,15 @@
       transition: transform 0.15s ease;
     }
 
+    .card-top  { display:flex; align-items:center; gap:6px; }
+    .card-text { flex:1; min-width:0; }
+    .card-name-row { display:flex; align-items:baseline; justify-content:space-between; }
+    .card-rows { display:block; margin-top:4px; }
+
+    @media (min-width: 600px) {
+      .pos-mobile { display:none; }
+    }
+
     .input-row {
       display: flex;
       align-items: center;
@@ -249,7 +258,7 @@ function makePie(g, capacity, targetGroup, total) {
     <text class="pie-lbl" x="40" y="48" text-anchor="middle" font-size="7" fill="#888" pointer-events="none">мест</text>
   `;
 
-  return `<svg width="64" height="64" viewBox="0 0 80 80" style="flex-shrink:0" data-capacity="${capacity}" data-total="${total}">${paths}${center}</svg>`;
+  return `<svg class="pie-svg" width="64" height="64" viewBox="0 0 80 80" style="flex-shrink:0" data-capacity="${capacity}" data-total="${total}">${paths}${center}</svg>`;
 }
 
 function cardHTML(school, data) {
@@ -278,14 +287,21 @@ function cardHTML(school, data) {
   }
 
   return `
-    <div style="display:flex;align-items:center;gap:6px">
-      <div style="flex:1;min-width:0">
-        <div class="row" style="align-items:baseline">
-          <span class="name">${school.name}</span>
-          ${position !== "-" ? `<span class="pos ${posClass}">${position}</span>` : ""}
+    <div>
+      <div class="card-top">
+        <div class="card-text">
+          <div class="card-name-row">
+            <span class="name">${school.name}</span>
+            ${position !== "-" ? `<span class="pos ${posClass} pos-mobile">${position}</span>` : ""}
+          </div>
         </div>
+        ${makePie(g, school.capacity, targetGroup, total)}
       </div>
-      ${makePie(g, school.capacity, targetGroup, total)}
+      <div class="card-rows">
+        ${position !== "-" ? `<div class="row"><span>Позиция</span><span class="pos ${posClass}">${position}</span></div>` : ""}
+        <div class="row"><span>Мест</span><span>${school.capacity}</span></div>
+        <div class="row"><span>Заявлений</span><span>${total}</span></div>
+      </div>
     </div>
   `;
 }
