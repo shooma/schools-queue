@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <title>Очередь в первый класс, ботаника</title>
+  <title>Очередь в первый класс</title>
 
   <style>
     :root {
@@ -58,20 +58,21 @@
     #list {
       display: grid;
       grid-template-columns: 1fr 1fr;
-      gap: 10px;
+      gap: 8px;
     }
 
     .card {
       background: var(--card);
       border-radius: 14px;
-      padding: 12px;
+      padding: 10px;
       margin-bottom: 0;
       box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+      overflow: hidden;
     }
 
     @media (min-width: 600px) {
       #list {
-        grid-template-columns: repeat(4, 1fr);
+        grid-template-columns: repeat(5, 1fr);
       }
 
       button {
@@ -83,13 +84,13 @@
     .row {
       display: flex;
       justify-content: space-between;
-      font-size: 16px;
-      margin: 4px 0;
+      font-size: 13px;
+      margin: 3px 0;
     }
 
     .name {
       font-weight: 600;
-      font-size: 18px;
+      font-size: 15px;
     }
 
     .pos.good { color: var(--good); font-weight: bold; }
@@ -99,6 +100,11 @@
     .small {
       font-size: 13px;
       color: var(--subtext);
+    }
+
+    .pie-seg {
+      cursor: pointer;
+      transition: transform 0.15s ease;
     }
 
     .input-row {
@@ -129,7 +135,7 @@
 <body>
 
 <div class="container">
-  <h2>Очередь в первый класс, ботаника</h2>
+  <h2>Очередь в первый класс</h2>
 
   <div class="input-row">
     <label for="target-input" class="small">Номер заявления</label>
@@ -143,6 +149,8 @@
   <div id="btn-row" style="margin-top:12px">
     <button onclick="loadData()">Обновить</button>
   </div>
+
+  <div id="legend" style="margin-top:16px;display:flex;flex-wrap:wrap;gap:8px 16px"></div>
 </div>
 
 <script>
@@ -173,108 +181,188 @@ const schools = [
   { name: "Школа 197", id: "0a498919-0fcf-45f2-af29-6da3ebab140b", capacity: 60 }
 ];
 
+const GROUP_COLORS  = ["#9b6bbf", "#4a90c4", "#c47f3a", "#4aaa6e"];
+const EMPTY_COLOR   = "#c0c0c8";
+const GROUP_NAMES   = ["Внеоч.", "Первооч.", "Братья", "Без льгот", "Свободно"];
+const GROUP_LABELS  = ["Внеочередники", "Первоочередники", "Братья и сёстры", "Без льгот", "Свободные места"];
+
+document.getElementById("legend").innerHTML =
+  [...GROUP_COLORS, EMPTY_COLOR].map((c, i) =>
+    `<span style="font-size:13px;color:${c}">&#9632; ${GROUP_LABELS[i]}</span>`
+  ).join("");
+
 function calculateGroups(numbers) {
   let indices = [0];
-
   for (let i = 1; i < numbers.length; i++) {
-    if (numbers[i] < numbers[i - 1]) {
-      indices.push(i);
-    }
+    if (numbers[i] < numbers[i - 1]) indices.push(i);
   }
-
   indices.push(numbers.length);
-
   let sizes = [];
-
   for (let i = 0; i < indices.length - 1; i++) {
     sizes.push(indices[i + 1] - indices[i]);
   }
-
   return sizes;
+}
+
+function donutSegment(cx, cy, outerR, innerR, startAngle, endAngle) {
+  const toRad = a => (a - 90) * Math.PI / 180;
+  const x1 = cx + outerR * Math.cos(toRad(startAngle));
+  const y1 = cy + outerR * Math.sin(toRad(startAngle));
+  const x2 = cx + outerR * Math.cos(toRad(endAngle));
+  const y2 = cy + outerR * Math.sin(toRad(endAngle));
+  const x3 = cx + innerR * Math.cos(toRad(endAngle));
+  const y3 = cy + innerR * Math.sin(toRad(endAngle));
+  const x4 = cx + innerR * Math.cos(toRad(startAngle));
+  const y4 = cy + innerR * Math.sin(toRad(startAngle));
+  const largeArc = (endAngle - startAngle > 180) ? 1 : 0;
+  return `M ${x1} ${y1} A ${outerR} ${outerR} 0 ${largeArc} 1 ${x2} ${y2} L ${x3} ${y3} A ${innerR} ${innerR} 0 ${largeArc} 0 ${x4} ${y4} Z`;
+}
+
+function makePie(g, capacity, targetGroup, total) {
+  const cx = 40, cy = 40, outerR = 32, innerR = 18;
+
+  // Кепим каждую группу по остаточной вместимости
+  let remaining = capacity;
+  const capped = g.map(v => { const c = Math.min(v, remaining); remaining -= c; return c; });
+  const empty = remaining;
+
+  const values = [...capped, empty];
+  const colors = [...GROUP_COLORS, EMPTY_COLOR];
+
+  let paths = "";
+  let startAngle = 0;
+
+  for (let i = 0; i < values.length; i++) {
+    const v = values[i];
+    if (v <= 0) continue;
+    const angle = (v / capacity) * 360;
+    const endAngle = startAngle + angle;
+    const stroke = (i === targetGroup) ? `stroke="white" stroke-width="2"` : "";
+    const midAngle = startAngle + angle / 2;
+    paths += `<path class="pie-seg" d="${donutSegment(cx, cy, outerR, innerR, startAngle, Math.min(endAngle, startAngle + 359.99))}" fill="${colors[i]}" ${stroke} data-label="${GROUP_NAMES[i]}" data-value="${values[i]}" data-mid="${midAngle}"/>`;
+    startAngle = endAngle;
+  }
+
+  const center = `
+    <circle class="pie-center" cx="40" cy="40" r="17" fill="transparent" style="cursor:pointer"/>
+    <text class="pie-val" x="40" y="37" text-anchor="middle" font-size="10" font-weight="bold" fill="currentColor" pointer-events="none">${capacity}</text>
+    <text class="pie-lbl" x="40" y="48" text-anchor="middle" font-size="7" fill="#888" pointer-events="none">мест</text>
+  `;
+
+  return `<svg width="64" height="64" viewBox="0 0 80 80" style="flex-shrink:0" data-capacity="${capacity}" data-total="${total}">${paths}${center}</svg>`;
+}
+
+function cardHTML(school, data) {
+  const total = data.count;
+  const numbers = data.items.map(d => d.declarationNumber);
+
+  const index = numbers.findIndex(n => n === getTarget());
+  const position = index !== -1 ? index + 1 : "-";
+
+  const groups = calculateGroups(numbers);
+  let g = [0, 0, 0, 0];
+  groups.forEach((v, i) => g[4 - groups.length + i] = v);
+
+  let targetGroup = -1;
+  if (index !== -1) {
+    let cum = 0;
+    for (let i = 0; i < groups.length; i++) {
+      cum += groups[i];
+      if (index < cum) { targetGroup = 4 - groups.length + i; break; }
+    }
+  }
+
+  let posClass = "mid";
+  if (position !== "-") {
+    posClass = position < school.capacity ? "good" : "bad";
+  }
+
+  return `
+    <div style="display:flex;align-items:center;gap:6px">
+      <div style="flex:1;min-width:0">
+        <div class="row" style="align-items:baseline">
+          <span class="name">${school.name}</span>
+          ${position !== "-" ? `<span class="pos ${posClass}">${position}</span>` : ""}
+        </div>
+      </div>
+      ${makePie(g, school.capacity, targetGroup, total)}
+    </div>
+  `;
 }
 
 async function loadData() {
   const list = document.getElementById("list");
   const btn = document.getElementById("btn-row");
-  list.innerHTML = "";
   btn.hidden = true;
 
   document.getElementById("updated").textContent =
     "Обновлено: " + new Date().toLocaleString();
 
-  for (const school of schools) {
-    try {
-      const res = await fetch(
-        `https://edu-inform.ekadm.ru/api/queue?schoolId=${school.id}`
-      );
+  // Показываем плейсхолдеры сразу
+  list.innerHTML = "";
+  const cards = schools.map(school => {
+    const card = document.createElement("div");
+    card.className = "card";
+    card.innerHTML = `<div class="name">${school.name}</div><div class="small" style="margin-top:6px">Загрузка...</div>`;
+    list.appendChild(card);
+    return card;
+  });
 
-      const data = await res.json();
-
-      const total = data.count;
-      const numbers = data.items.map(i => i.declarationNumber);
-
-      const index = numbers.findIndex(n => n === getTarget());
-      const position = index !== -1 ? index + 1 : "-";
-
-      const groups = calculateGroups(numbers);
-
-      let g = [0, 0, 0, 0];
-      groups.forEach((v, i) => g[4 - groups.length + i] = v);
-
-      let targetGroup = -1;
-      if (index !== -1) {
-        let cum = 0;
-        for (let i = 0; i < groups.length; i++) {
-          cum += groups[i];
-          if (index < cum) { targetGroup = 4 - groups.length + i; break; }
-        }
-      }
-
-      let posClass = "mid";
-      if (position !== "-") {
-        posClass = position < school.capacity ? "good" : "bad";
-      }
-
-      const card = document.createElement("div");
-      card.className = "card";
-
-      card.innerHTML = `
-        <div class="name">${school.name}</div>
-
-        ${position !== "-" ? `<div class="row">
-          <span>Позиция</span>
-          <span class="pos ${posClass}">${position}</span>
-        </div>` : ""}
-
-        <div class="row">
-          <span>Мест</span>
-          <span>${school.capacity}</span>
-        </div>
-
-        <div class="row">
-          <span>Заявлений</span>
-          <span>${total}</span>
-        </div>
-
-        <div class="row small">
-          <span title="Внеоч. / Первооч. / Братья и сестры / Без льгот" style="cursor:help;border-bottom:1px dashed var(--subtext)">Группы</span>
-          <span>${g.map((v, i) => i === targetGroup ? `<b class="pos ${posClass}">${v}</b>` : v).join("/")}</span>
-        </div>
-      `;
-
-      list.appendChild(card);
-
-    } catch (e) {
-      const error = document.createElement("div");
-      error.className = "card";
-      error.textContent = school.name + " — ошибка";
-      list.appendChild(error);
-    }
-  }
+  // Загружаем все школы параллельно, обновляем карточки по мере готовности
+  await Promise.all(schools.map((school, i) =>
+    fetch(`https://edu-inform.ekadm.ru/api/queue?schoolId=${school.id}`)
+      .then(r => r.json())
+      .then(data => { cards[i].innerHTML = cardHTML(school, data); })
+      .catch(() => { cards[i].innerHTML = `<div class="name">${school.name}</div><div class="small" style="margin-top:6px">— ошибка</div>`; })
+  ));
 
   btn.hidden = false;
   document.querySelector("#btn-row button").textContent = "Обновить";
 }
+
+function showPieInfo(path) {
+  const svg = path.closest("svg");
+  hidePieInfo(svg);
+  svg.querySelector(".pie-val").textContent = path.dataset.value;
+  svg.querySelector(".pie-lbl").textContent = path.dataset.label;
+  const rad = (parseFloat(path.dataset.mid) - 90) * Math.PI / 180;
+  path.style.transform = `translate(${Math.cos(rad) * 5}px, ${Math.sin(rad) * 5}px)`;
+}
+
+function showCenterInfo(circle) {
+  const svg = circle.closest("svg");
+  hidePieInfo(svg);
+  svg.querySelector(".pie-val").textContent = svg.dataset.total;
+  svg.querySelector(".pie-lbl").textContent = "подано";
+}
+
+function hidePieInfo(svg) {
+  svg.querySelector(".pie-val").textContent = svg.dataset.capacity;
+  svg.querySelector(".pie-lbl").textContent = "мест";
+  svg.querySelectorAll(".pie-seg").forEach(p => p.style.transform = "");
+}
+
+const list = document.getElementById("list");
+list.addEventListener("mouseover", e => {
+  const path = e.target.closest("path[data-label]");
+  if (path) { showPieInfo(path); return; }
+  const center = e.target.closest(".pie-center");
+  if (center) showCenterInfo(center);
+});
+list.addEventListener("mouseout", e => {
+  const svg = e.target.closest("svg");
+  if (svg && !svg.contains(e.relatedTarget)) hidePieInfo(svg);
+});
+list.addEventListener("touchstart", e => {
+  const path = e.target.closest("path[data-label]");
+  if (path) { showPieInfo(path); return; }
+  const center = e.target.closest(".pie-center");
+  if (center) showCenterInfo(center);
+}, { passive: true });
+list.addEventListener("touchend", e => {
+  const svg = e.target.closest("svg");
+  if (svg) setTimeout(() => { if (svg.isConnected) hidePieInfo(svg); }, 800);
+}, { passive: true });
 
 loadData();
 </script>
